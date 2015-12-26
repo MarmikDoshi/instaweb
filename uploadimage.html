@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Instaweb</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<style type="text/css">
+	body {
+		width: 600px;
+		margin: 0 auto 20px;
+	}
+	hr {
+		clear: both;
+	}
+	.content * {
+		width: 100%;
+		height: 350px;
+	}
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style-type: none;
+	}
+	ul li {
+		display: inline;
+		float: left;
+		padding: 10px;
+	}
+	.like, .unlike {
+		cursor: pointer;
+		color: blue;
+	}
+	textarea {
+		resize: none;
+		width: 250px;
+	}
+	</style>
+</head>
+<body>
+     <a href="{{ url|safe }}">{{ url_linktext }}</a>
+     {% for image in images %}
+		<div>
+			<p>
+				{% if image.owner %}
+                <b>{{ image.owner }}
+				</b> Uploaded:
+				{% else %}
+				 An anonymous person uploaded:
+				{% endif %}
+                <!--<img src="/img?img_id={{ image.key.urlsafe() }}">-->
+			</p>
+			<div class="content">
+                {% if image.type == 'image' %}
+				    <img src="/img?img_id={{image.blob_key}}">
+                {% endif %}
+                {% if image.type == 'video' %}
+				<video controls>
+					<source src="/img?img_id={{ image.blob_key }}">
+					Your browser does not support HTML5 video.
+				</video>
+                {% endif %}
+			</div>
+            <div class="comments">
+                {% if image.comment %}
+                <p>{{ image.comment }}</p>
+                {% endif %}
+			</div>
+			<ul>
+				<li>
+					<span>{{ image.likes_count or 0 }}</span>
+                    <span class="like" data-image="{{ image.blob_key }}">Like</span>
+				</li>
+				<li>
+                    <span>{{ image.unlike_count or 0 }}</span>
+                    <span class="unlike" data-image="{{ image.blob_key }}">Unlike</span>
+				</li>
+				<li>
+					<textarea data-image="{{ image.blob_key }}"></textarea>
+				</li>
+				<li>
+					<button>Add Comment</button>
+				</li>
+			</ul>
+			<hr>
+		</div>
+		{% endfor %}
+
+		<!-- form to upload file -->
+		<form action='{{ upload_url }}' enctype="multipart/form-data" method="post">
+			Avatar: <input type="file" name="upload"> <input type="submit" value="Upload">
+		</form>
+
+
+	<script type="text/javascript">
+	$(document).ready(function(){
+		$(document).on("click", ".like, .unlike", function(){
+			var like = $(this),
+				count = like.prev(),
+				ajax = $.ajax({
+				type : "POST",
+				url : "changelike",
+				data : JSON.stringify({
+					like : like.text(), // "Like" or "Unlike"
+					id : like.attr("data-image")
+				})
+			});
+			ajax.done(function(result){
+				var obj = JSON.parse(result);
+
+				if (obj.type == "+OK") {
+					count.text(parseInt(count.text(), 10) + 1);
+					like.prop("disabled", true);
+				} else alert(obj.msg);
+			});
+			ajax.fail(function(result){
+				console.error(result);
+			});
+		});
+
+		$(document).on("click", "button", function(){
+			var comment = $(this).parent().prev().find("textarea");
+
+			if ($.trim(comment.val()) != '') {
+				var ajax = $.ajax({
+					type : "POST",
+					url : "/comment",
+					data : JSON.stringify({
+						comment : comment.val(),
+						id : comment.attr("data-image")
+					})
+				});
+				ajax.done(function(result){
+					var obj = JSON.parse(result);
+
+					if (obj.type == "+OK") {
+						comment.parent().parent().prev().append("<p>You : " + comment.val() + "</p>");
+						comment.val('');
+					} else alert(obj.msg);
+				});
+				ajax.fail(function(result){
+					console.error(result);
+				});
+			}
+		});
+	});
+	</script>
+</body>
+</html>
