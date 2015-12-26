@@ -158,8 +158,10 @@ class SendUploadedData(webapp2.RequestHandler):
     Send email that contains the website details
     """
     def get(self):
-        sender_address = "doshimarmik018@gmail.com"
-        recipient = "get@znapin.com"
+        #enter the sender email address
+        sender_address = ""
+        #enter the recipient email address
+        recipient = ""
         subject = "Website details"
 
         last_hour = datetime.datetime.now() - datetime.timedelta(hours=1)
