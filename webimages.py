@@ -28,6 +28,7 @@ class UserImage(ndb.Model):
     number_of_comments = ndb.IntegerProperty(default=0)
     type = ndb.StringProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
+    user_id_likes_unlikes = ndb.StringProperty(repeated=True)
 
 
 def uploaded_image_key(image_name=DEFAULT_IMAGE_NAME):
@@ -112,20 +113,27 @@ class Countlikes(webapp2.RequestHandler):
         if user:
             data = json.loads(self.request.body)
             response = data['like']
+            user_id = users.get_current_user().user_id()
 
             image = UserImage.query().filter(
                 UserImage.blob_key == BlobKey((data['id']))).get()
 
-            if response == 'Like':
-                if not image.likes_count:
-                    image.likes_count = 0
-                image.likes_count += 1
+            if not user_id in image.user_id_likes_unlikes:
+                if response == 'Like':
+                    if not image.likes_count:
+                        image.likes_count = 0
+                    image.likes_count += 1
+                else:
+                    if not image.unlike_count:
+                        image.unlike_count = 0
+                    image.unlike_count += 1
+                image.user_id_likes_unlikes.append(user_id)
+                image.put()
+                self.response.out.write(json.dumps({'type': '+OK'}))
             else:
-                if not image.unlike_count:
-                    image.unlike_count = 0
-                image.unlike_count += 1
-            image.put()
-            self.response.out.write(json.dumps({'type': '+OK'}))
+                self.response.out.write(
+                    json.dumps({'msg': 'You cannot like or unlike the data again',
+                                'type': '-ERR'}))
         else:
             self.response.out.write(
                 json.dumps({'msg': 'Please login to change the like',

@@ -61,6 +61,8 @@
                 {% endif %}
 			</div>
             <div class="comments">
+                <b>Number of comments:</b>
+                {{ image.number_of_comments }}
                 {% if image.comment %}
                 <p>{{ image.comment }}</p>
                 {% endif %}
@@ -109,7 +111,6 @@
 
 				if (obj.type == "+OK") {
 					count.text(parseInt(count.text(), 10) + 1);
-					like.prop("disabled", true);
 				} else alert(obj.msg);
 			});
 			ajax.fail(function(result){
